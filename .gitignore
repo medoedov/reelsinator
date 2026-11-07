@@ -21,3 +21,8 @@ skills-lock.json
 
 # per-machine Claude Code settings
 .claude/settings.local.json
+
+# Local development archive; excluded from the public product tree.
+/TASK.md
+/prework/
+/docs/UPSTREAM.md

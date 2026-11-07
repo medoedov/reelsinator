@@ -4,6 +4,19 @@
 `python`. Свободный запрос интерпретирует Codex или Claude Code: агент редактирует обычные
 TSX/JSON, а `reel.py` выполняет конкретные операции. CLI не является отдельным языковым агентом.
 
+## Окружение
+
+Проверено на Windows: Node.js 22.20.0, Python 3.13.7, FFmpeg 9.0.2 и Remotion 4.0.503.
+После клонирования выполни `npm ci --prefix video` и `python reel.py doctor`.
+При первом рендере Remotion скачивает Chrome Headless Shell. В ограниченной Windows-песочнице
+Chromium может требовать разрешения на локальный запуск.
+
+FFmpeg и ffprobe должны быть в PATH. На Windows можно распаковать
+[FFmpeg Essentials](https://www.gyan.dev/ffmpeg/builds/) в `.tools/ffmpeg/`:
+CLI находит `**/bin/ffmpeg.exe` и `ffprobe.exe` автоматически. Другой путь задаётся
+переменными `FFMPEG` и `FFPROBE`. Бинарники, модели и `node_modules` в Git не входят.
+`WHISPER_CLI` задаёт путь к необязательному whisper-cli, если его нет в PATH.
+
 ## Файлы одного ролика
 
 | Файл | Назначение |
@@ -73,8 +86,8 @@ python reel.py transcribe interview --language ru --model "C:/models/ggml-model.
 ## Сцены, графика и звук
 
 Компоненты `MediaLayer`, `CaptionTrack`, `Fade` находятся в `video/src/project/`.
-`video/src/ui/` сохраняет панели, карточки, рисунки и приёмы раскрытия исходного harness.
-Параметры нового ролика локальны; часть унаследованных компонентов читает глобальный
+`video/src/ui/` содержит панели, карточки, рисунки и эффекты раскрытия.
+Параметры нового ролика локальны; часть компонентов читает глобальный
 `harness.config.json`, поэтому проверь зависимости перед использованием их в своём проекте.
 
 Используй `Sequence` для расположения TSX-сцен на шкале, `useCurrentFrame()` для движения

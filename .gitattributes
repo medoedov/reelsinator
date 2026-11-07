@@ -5,5 +5,3 @@
 *.mp4 binary
 *.png binary
 *.jpg binary
-# Unified diff context lines intentionally contain a single leading space.
-prework/patches/*.patch text eol=lf whitespace=-blank-at-eol
