@@ -127,7 +127,7 @@ words.forEach((word, i) => {
     groups.push([]);
   }
 });
-if (groups[groups.length - 1].length === 0) {
+if (groups.length && groups[groups.length - 1].length === 0) {
   groups.pop();
 }
 

@@ -13,5 +13,5 @@
     "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": true
   },
-  "exclude": ["remotion.config.ts"]
+  "exclude": ["remotion.config.ts", "projects", "templates"]
 }

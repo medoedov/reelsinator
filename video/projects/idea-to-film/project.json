@@ -1,0 +1,16 @@
+{
+  "title": "От идеи до видео",
+  "idea": "Как идея становится видео: мысль → сцены → монтаж → готовый ролик",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "durationInFrames": 540,
+  "fontFamily": "Arial",
+  "colors": {
+    "background": "#111726",
+    "foreground": "#f6f1e7",
+    "accent": "#476dff",
+    "muted": "#a4aec4"
+  },
+  "audio": { "lufs": -14 }
+}

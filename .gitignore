@@ -1,4 +1,13 @@
 .DS_Store
+.tools/
+__pycache__/
+*.pyc
+video/projects/*/cache/
+video/projects/*/out/
+video/projects/*/public/assets/
+video/projects/*/public/prepared/
+video/projects/*/media.json
+video/projects/.new-*/
 
 # raw takes and finished edits are heavy and personal
 takes/*

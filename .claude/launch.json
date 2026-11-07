@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "studio",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "3111"],
-      "cwd": "video",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["reel.py", "studio", "idea-to-film", "--port", "3111"],
+      "cwd": ".",
       "port": 3111
     }
   ]

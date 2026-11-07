@@ -1,0 +1,15 @@
+{
+  "source": "assets/763317115db4ba1606c7a4d27172263ab8791d2f8297cd393267fe22b889559f.mov",
+  "keeps": [
+    [
+      0.0,
+      2.0
+    ],
+    [
+      4.0,
+      6.0
+    ]
+  ],
+  "speed": 1,
+  "fit": "contain"
+}

@@ -1,0 +1,11 @@
+test_bad_loudnorm_measurement_stops (__main__.MasterPipelineTests.test_bad_loudnorm_measurement_stops) ... ok
+test_missing_input_stops (__main__.MasterPipelineTests.test_missing_input_stops) ... ok
+test_multiple_chunks_keep_last_frame (__main__.MasterPipelineTests.test_multiple_chunks_keep_last_frame) ... ok
+test_render_failure_stops (__main__.MasterPipelineTests.test_render_failure_stops) ... ok
+test_silent_audio (__main__.MasterPipelineTests.test_silent_audio) ... ok
+test_tone_master (__main__.MasterPipelineTests.test_tone_master) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 23.683s
+
+OK

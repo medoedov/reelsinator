@@ -1,0 +1,18 @@
+{
+  "title": "Техническая проверка",
+  "idea": "",
+  "width": 640,
+  "height": 360,
+  "fps": 30,
+  "durationInFrames": 180,
+  "fontFamily": "Arial",
+  "colors": {
+    "background": "#101523",
+    "foreground": "#f4f0e6",
+    "accent": "#507aff",
+    "muted": "#a8b1c7"
+  },
+  "audio": {
+    "lufs": -14
+  }
+}

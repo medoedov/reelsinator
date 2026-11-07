@@ -1,0 +1,18 @@
+{
+  "title": "С чистого листа",
+  "idea": "Никакой исходной съёмки",
+  "width": 360,
+  "height": 640,
+  "fps": 24.0,
+  "durationInFrames": 72,
+  "fontFamily": "Arial",
+  "colors": {
+    "background": "#101523",
+    "foreground": "#f4f0e6",
+    "accent": "#507aff",
+    "muted": "#a8b1c7"
+  },
+  "audio": {
+    "lufs": -14
+  }
+}

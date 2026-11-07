@@ -46,29 +46,33 @@ ffmpeg -v error -f concat -safe 0 -i out/parts.txt -c copy -y out/picture.mp4
 # force-load can starve while other workers decode footage
 npx remotion render MyComp out/sound.wav --codec=wav --timeout=300000 --concurrency=2
 
-# No -shortest: both streams come from the same composition and are the same length by
-# construction, but the AAC encode lands a few ms short of the picture, and -shortest then
-# silently truncates the video to match.
-ffmpeg -v error -i out/picture.mp4 -i out/sound.wav -map 0:v -map 1:a \
-  -c:v copy -c:a aac -b:a 192k -movflags +faststart -y out/final.mp4
-
-# Voice stays out of a limiter; loudnorm only moves the whole mix to target (delivery-specs §5).
-# TWO passes: single-pass loudnorm works off a running estimate and lands ~1.5 LU under target.
-# Pass one measures, pass two applies those numbers. The JSON block is the tail of ffmpeg's stderr.
-MEASURED=$(ffmpeg -hide_banner -nostats -i out/final.mp4 \
+# Measure the lossless mix, then normalize and encode the master audio once.
+MEASURED=$(ffmpeg -hide_banner -nostats -i out/sound.wav \
   -af "loudnorm=I=$LUFS:TP=-1.5:LRA=11:print_format=json" -f null - 2>&1 \
   | sed -n '/^{/,/^}/p')
-read -r I LRA TP THRESH OFFSET <<<"$(node -e '
+FILTER=$(node -e '
 const m = JSON.parse(process.argv[1]);
-console.log(m.input_i, m.input_lra, m.input_tp, m.input_thresh, m.target_offset);
-' "$MEASURED")"
+const target = Number(process.argv[2]);
+if (!Number.isFinite(target) || target < -70 || target > -5) {
+  throw new Error("Invalid loudness target");
+}
+if (m.input_i === "-inf" && m.input_tp === "-inf") {
+  console.log("anull"); // Intentionally silent audio has no measurable loudness.
+} else {
+  const keys = ["input_i", "input_lra", "input_tp", "input_thresh", "target_offset"];
+  if (!keys.every(k => typeof m[k] === "string" && m[k].trim() !== "" && Number.isFinite(Number(m[k])))) {
+    throw new Error("Incomplete or non-finite loudnorm measurement");
+  }
+  console.log(`loudnorm=I=${target}:TP=-1.5:LRA=11:linear=true` +
+    `:measured_I=${m.input_i}:measured_LRA=${m.input_lra}:measured_TP=${m.input_tp}` +
+    `:measured_thresh=${m.input_thresh}:offset=${m.target_offset}`);
+}
+' "$MEASURED" "$LUFS")
 
-# built as one variable on purpose: inlining it in -af mangles the option after the last value
-FILTER="loudnorm=I=$LUFS:TP=-1.5:LRA=11:linear=true"
-FILTER="$FILTER:measured_I=${I}:measured_LRA=${LRA}:measured_TP=${TP}"
-FILTER="$FILTER:measured_thresh=${THRESH}:offset=${OFFSET}"
-
-ffmpeg -v error -i out/final.mp4 -c:v copy -af "$FILTER" -c:a aac -b:a 192k -y out/final-master.mp4
+# Both streams cover the composition; -shortest can truncate its last video frame.
+ffmpeg -v error -i out/picture.mp4 -i out/sound.wav -map 0:v:0 -map 1:a:0 \
+  -c:v copy -af "$FILTER" -c:a aac -b:a 192k -ar 48000 \
+  -movflags +faststart -y out/final-master.mp4
 
 # a 540p preview to send around, and the frame count check
 ffmpeg -v error -i out/final-master.mp4 -vf scale=540:-2 -c:v libx264 -crf 26 -preset fast \

@@ -1,0 +1,16 @@
+{
+  "title": "Новая история",
+  "idea": "Одна идея превращается в видео",
+  "width": 1280,
+  "height": 720,
+  "fps": 30,
+  "durationInFrames": 300,
+  "fontFamily": "Arial",
+  "colors": {
+    "background": "#101523",
+    "foreground": "#f4f0e6",
+    "accent": "#507aff",
+    "muted": "#a8b1c7"
+  },
+  "audio": { "lufs": -14 }
+}

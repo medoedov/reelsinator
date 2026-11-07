@@ -1,0 +1,26 @@
+{
+  "exercise": "Change only the closing copy; preserve other scenes",
+  "requestOrigin": "Developer acceptance exercise",
+  "frames": 540,
+  "unchangedSceneSourceIdentical": true,
+  "earlierFramesCompared": 420,
+  "earlierFramesPixelIdentical": 417,
+  "earlierFrameDifferences": [
+    1,
+    2,
+    3
+  ],
+  "earlierFramesSSIM": 1.0,
+  "note": "Three initial fade frames differ below displayed SSIM precision; all frames 4–419 are pixel-identical. No change to earlier TSX scenes.",
+  "changedEndingFrames": 85,
+  "firstChangedEndingFrame": 455,
+  "beforeSha256": "89d331708e30fc69840f9ffaac2f330e4b83f2487e96aabcb4a65724f2fd49ab",
+  "afterSha256": "6876eb38b5fe091bd03679a83c927e54827669eae930de0465d7515e145fa6de",
+  "runtime": "Codex desktop",
+  "claudeCode": {
+    "version": "2.1.220",
+    "auth": "loggedIn=false",
+    "actualContinuation": "not tested"
+  },
+  "realSpeech": "Deferred by user; technical tone fixture is not speech acceptance"
+}
