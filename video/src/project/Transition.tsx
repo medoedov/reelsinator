@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
-import { EASE } from "../ui/Panel";
+import { EASE } from "./motion";
 
 export const Fade: React.FC<{
   children: React.ReactNode;

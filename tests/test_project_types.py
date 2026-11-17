@@ -27,6 +27,14 @@ class ProjectTypeTests(unittest.TestCase):
                 check_project(project)
             except subprocess.CalledProcessError as error:
                 self.fail((error.stdout or '') + (error.stderr or ''))
+            dependencies = subprocess.run(
+                [shutil.which('node'), str(ROOT / 'video/node_modules/typescript/bin/tsc'),
+                 '--project', str(project / 'tsconfig.json'), '--listFilesOnly'],
+                capture_output=True, text=True, check=True,
+            ).stdout.replace('\\', '/')
+            self.assertNotIn('/harness.config.json', dependencies,
+                             'Fresh projects must not load global account styling')
+            self.assertNotIn('/src/brand.ts', dependencies)
 
 
 if __name__ == '__main__':

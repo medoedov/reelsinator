@@ -1,5 +1,5 @@
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { EASE, Reveal } from "../../src/ui/Panel";
+import { EASE, Reveal } from "../../src/project/motion";
 import { MediaLayer } from "../../src/project/MediaLayer";
 import { CaptionTrack } from "../../src/project/CaptionTrack";
 import config from "./project.json";

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { measureText } from "@remotion/layout-utils";
 import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { CLAMP, EASE, Reveal } from "../ui/Panel";
+import { CLAMP, EASE, Reveal } from "./motion";
 import type { CaptionWord } from "./types";
 
 const groupWords = (words: CaptionWord[]): CaptionWord[][] => {

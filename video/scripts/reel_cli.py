@@ -36,8 +36,38 @@ def project_path(name):
     return path
 
 
+def account_path(name):
+    if not isinstance(name, str) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]{0,63}', name):
+        raise ValueError('Account ID: 1–64 lowercase letters, digits, hyphen or underscore')
+    root = VIDEO / 'accounts'
+    path = root / name
+    if not path.resolve().is_relative_to(root.resolve()):
+        raise ValueError('Account must stay within video/accounts')
+    return path
+
+
+def account_profile(name):
+    profile = read_json(account_path(name) / 'account.json')
+    if not isinstance(profile, dict):
+        raise ValueError('account.json must be an object')
+    defaults = profile.get('defaults', {})
+    allowed = {'width', 'height', 'fps', 'fontFamily', 'colors', 'audio'}
+    if not isinstance(defaults, dict) or defaults.keys() - allowed:
+        raise ValueError('Account defaults support only width, height, fps, fontFamily, colors and audio')
+    for key, fields in (('colors', {'background', 'foreground', 'accent', 'muted'}), ('audio', {'lufs'})):
+        if key in defaults and (not isinstance(defaults[key], dict) or defaults[key].keys() - fields):
+            raise ValueError(f'Invalid account defaults.{key}')
+    if 'fontFamily' in defaults and (not isinstance(defaults['fontFamily'], str) or not defaults['fontFamily'].strip()):
+        raise ValueError('Account fontFamily must be a nonempty string')
+    if any(not isinstance(value, str) or not value.strip() for value in defaults.get('colors', {}).values()):
+        raise ValueError('Account colors must be nonempty strings')
+    return profile
+
+
 def config_for(project):
     config = read_json(project / 'project.json')
+    if 'account' in config:
+        account_path(config['account'])
     for key in ('width', 'height', 'fps', 'durationInFrames'):
         value = config[key]
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
@@ -48,6 +78,37 @@ def config_for(project):
     if not isinstance(target, (int, float)) or not math.isfinite(target) or not -70 <= target <= -5:
         raise ValueError('audio.lufs must be between -70 and -5')
     return config
+
+
+def create_account(args):
+    account = account_path(args.account)
+    if account.exists():
+        raise ValueError(f'Account already exists: {account}')
+    defaults = {}
+    for key in ('width', 'height', 'fps'):
+        value = getattr(args, key)
+        if value is None:
+            continue
+        if not math.isfinite(value) or value <= 0 or (key != 'fps' and value % 2):
+            raise ValueError(f'{key} must be positive and finite; dimensions must be even')
+        defaults[key] = value
+    profile = read_json(VIDEO / 'templates/account/account.json')
+    profile.update(title=args.title or args.account, platform=args.platform, handle=args.handle, defaults=defaults)
+    account.parent.mkdir(parents=True, exist_ok=True)
+    stage = account.parent / f'.new-{uuid.uuid4().hex}'
+    try:
+        shutil.copytree(VIDEO / 'templates/account', stage)
+        atomic_json(stage / 'account.json', profile)
+        source = stage / 'SOURCE.md'
+        source.write_text(source.read_text(encoding='utf-8').format(
+            title=profile['title'], platform=args.platform or 'Не указана',
+            handle=args.handle or 'Не указан', brief=args.brief or 'Описание пока не предоставлено.',
+        ), encoding='utf-8')
+        stage.rename(account)
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage)
+    print(account)
 
 
 @contextmanager
@@ -86,18 +147,34 @@ def create(args):
     project = project_path(args.project)
     if project.exists():
         raise ValueError(f'Project already exists: {project}')
-    if not math.isfinite(args.fps) or not math.isfinite(args.seconds) or args.fps <= 0 or args.seconds <= 0:
-        raise ValueError('fps and seconds must be positive finite numbers')
     config = read_json(VIDEO / 'templates/project/project.json')
-    config.update(title=args.title or args.project, idea=args.idea or '', width=args.width,
-                  height=args.height, fps=args.fps, durationInFrames=round(args.seconds * args.fps))
+    if args.account:
+        defaults = account_profile(args.account).get('defaults', {})
+        for key, value in defaults.items():
+            config[key] = {**config[key], **value} if key in {'colors', 'audio'} else value
+        config['account'] = args.account
+    for key in ('width', 'height', 'fps'):
+        if getattr(args, key) is not None:
+            config[key] = getattr(args, key)
+    fps = config['fps']
+    if (isinstance(fps, bool) or not isinstance(fps, (int, float)) or not math.isfinite(fps)
+            or not math.isfinite(args.seconds) or fps <= 0 or args.seconds <= 0):
+        raise ValueError('fps and seconds must be positive finite numbers')
+    config.update(title=args.title or args.project, idea=args.idea or '',
+                  durationInFrames=round(args.seconds * fps))
     # Build outside the final name so failed validation never leaves a half-created project.
     PROJECTS.mkdir(parents=True, exist_ok=True)
     stage = PROJECTS / f'.new-{uuid.uuid4().hex}'
     shutil.copytree(VIDEO / 'templates/project', stage)
-    atomic_json(stage / 'project.json', config)
     try:
+        atomic_json(stage / 'project.json', config)
         config_for(stage)
+        if args.account:
+            source = stage / 'SOURCE.md'
+            context = (f'Аккаунт: [{args.account}](../../accounts/{args.account}/SOURCE.md).\n'
+                       'Настройки скопированы из account.json при создании; текущие параметры — в project.json.\n'
+                       'Материалы другого аккаунта не подключать без явной задачи.\n\n')
+            source.write_text(context + source.read_text(encoding='utf-8'), encoding='utf-8')
         (stage / 'public').mkdir(exist_ok=True)
         (stage / 'public/.gitkeep').touch()
         stage.rename(project)
@@ -105,6 +182,17 @@ def create(args):
         if stage.exists():
             shutil.rmtree(stage)
     print(project)
+
+
+def use_account_asset(project, config, relative):
+    if not config.get('account'):
+        raise ValueError('Project has no account; set its account in project.json before using account assets')
+    account = account_path(config['account']).resolve()
+    assets = (account / 'assets').resolve(strict=True)
+    source = (assets / relative).resolve(strict=True)
+    if Path(relative).is_absolute() or not assets.is_relative_to(account) or not source.is_relative_to(assets):
+        raise ValueError('Asset must stay within the selected account assets directory')
+    return import_asset(project, source)
 
 
 def source_fingerprint(project):
@@ -287,15 +375,24 @@ def parser():
     p = argparse.ArgumentParser(description=__doc__)
     commands = p.add_subparsers(dest='command', required=True)
     commands.add_parser('doctor', help='Check local required tools without touching credentials')
-    commands.add_parser('list', help='List editable projects')
+    commands.add_parser('accounts', help='List account profiles without loading their working materials')
+    account_new = commands.add_parser('account-new', help='Create a separate account with a filled starting passport')
+    account_new.add_argument('account')
+    account_new.add_argument('--title'); account_new.add_argument('--platform'); account_new.add_argument('--handle')
+    account_new.add_argument('--brief', help='Known concept and requirements; the agent expands the passport from the request')
+    account_new.add_argument('--width', type=int); account_new.add_argument('--height', type=int)
+    account_new.add_argument('--fps', type=float)
+    listing = commands.add_parser('list', help='List editable projects, optionally for one account')
+    listing.add_argument('--account')
     new = commands.add_parser('new', help='Create an isolated editable project')
     new.add_argument('project'); new.add_argument('--idea'); new.add_argument('--title')
-    new.add_argument('--width', type=int, default=1280); new.add_argument('--height', type=int, default=720)
-    new.add_argument('--fps', type=float, default=30); new.add_argument('--seconds', type=float, default=12)
-    for command in ('import', 'cut', 'prepare', 'transcribe', 'check', 'render', 'preview', 'still', 'studio', 'verify', 'reference'):
+    new.add_argument('--account', help='Copy defaults from this account; omitted = standalone, no account inheritance')
+    new.add_argument('--width', type=int); new.add_argument('--height', type=int)
+    new.add_argument('--fps', type=float); new.add_argument('--seconds', type=float, default=12)
+    for command in ('import', 'asset', 'cut', 'prepare', 'transcribe', 'check', 'render', 'preview', 'still', 'studio', 'verify', 'reference'):
         sub = commands.add_parser(command)
         sub.add_argument('project')
-        if command in ('import', 'reference'):
+        if command in ('import', 'asset', 'reference'):
             sub.add_argument('source')
         if command == 'cut':
             sub.add_argument('--source', help='Local source to import, or use current edit.json source')
@@ -320,9 +417,20 @@ def main(argv=None):
     try:
         if args.command == 'doctor':
             return doctor()
+        if args.command == 'account-new':
+            create_account(args)
+            return 0
+        if args.command == 'accounts':
+            for path in sorted((VIDEO / 'accounts').glob('*/account.json')):
+                profile = account_profile(path.parent.name)
+                print(f"{path.parent.name}\t{profile.get('title', '')}\t{profile.get('handle', '')}")
+            return 0
         if args.command == 'list':
+            if args.account:
+                account_profile(args.account)
             for path in sorted(PROJECTS.glob('*/project.json')):
-                print(path.parent.name)
+                if not args.account or read_json(path).get('account') == args.account:
+                    print(path.parent.name)
             return 0
         if args.command == 'new':
             create(args)
@@ -340,6 +448,8 @@ def main(argv=None):
         with operation(project):
             if args.command == 'import':
                 print(import_asset(project, args.source))
+            elif args.command == 'asset':
+                print(use_account_asset(project, config, args.source))
             elif args.command == 'cut':
                 if args.keep and args.auto:
                     raise ValueError('Use either --keep or --auto')
